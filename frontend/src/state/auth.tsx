@@ -1,0 +1,86 @@
+import React, { createContext, useContext, useMemo, useState } from 'react'
+import { apiFetch, type TokenPair } from '../api/client'
+
+type AuthUser = { id: number; email: string; is_admin: boolean }
+
+type AuthState = {
+  tokenPair: TokenPair | null
+  user: AuthUser | null
+  login: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string) => Promise<void>
+  logout: () => void
+}
+
+const LS_KEY = 'mm_token_pair'
+
+function loadTokenPair(): TokenPair | null {
+  const raw = localStorage.getItem(LS_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as TokenPair
+  } catch {
+    return null
+  }
+}
+
+function saveTokenPair(tp: TokenPair | null) {
+  if (!tp) localStorage.removeItem(LS_KEY)
+  else localStorage.setItem(LS_KEY, JSON.stringify(tp))
+}
+
+const AuthCtx = createContext<AuthState | null>(null)
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [tokenPair, setTokenPair] = useState<TokenPair | null>(() =>
+    loadTokenPair(),
+  )
+  const [user, setUser] = useState<AuthUser | null>(null)
+
+  async function fetchMe(access: string) {
+    // Keeps UI role-aware (admin vs regular user).
+    const me = await apiFetch<AuthUser>('/auth/me', { token: access })
+    setUser(me)
+  }
+
+  async function login(email: string, password: string) {
+    const form = new URLSearchParams()
+    form.set('username', email)
+    form.set('password', password)
+    const tp = await apiFetch<TokenPair>('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form.toString(),
+    })
+    setTokenPair(tp)
+    saveTokenPair(tp)
+    await fetchMe(tp.access_token)
+  }
+
+  async function register(email: string, password: string) {
+    await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    })
+    await login(email, password)
+  }
+
+  function logout() {
+    setUser(null)
+    setTokenPair(null)
+    saveTokenPair(null)
+  }
+
+  const value = useMemo<AuthState>(
+    () => ({ tokenPair, user, login, register, logout }),
+    [tokenPair, user],
+  )
+
+  return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthCtx)
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+  return ctx
+}
+
