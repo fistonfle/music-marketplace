@@ -15,7 +15,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
-          <div className="min-h-dvh bg-slate-950 text-slate-100 antialiased">
+          <div className="min-h-dvh text-stone-100 antialiased">
             <App />
           </div>
         </BrowserRouter>

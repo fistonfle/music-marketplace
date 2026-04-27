@@ -1,6 +1,6 @@
 // Login/register page (JWT access token used for protected actions).
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../state/auth'
 
 export function LoginPage() {
@@ -19,7 +19,7 @@ export function LoginPage() {
       if (mode === 'login') await login(email, password)
       else await register(email, password)
       nav('/')
-    } catch (e) {
+    } catch {
       setError('Authentication failed')
     } finally {
       setBusy(false)
@@ -27,29 +27,38 @@ export function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg">
-      <h1 className="text-2xl font-semibold text-white">{mode === 'login' ? 'Login' : 'Register'}</h1>
-      <p className="mb-4 text-slate-300">
-        JWT auth is required for purchasing, rating, and viewing your library.
+    <div className="mx-auto flex max-w-md flex-col items-center pt-4">
+      <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-fuchsia-500 to-rose-600 shadow-xl shadow-fuchsia-950/50 ring-1 ring-white/20">
+        <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+          <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z" />
+        </svg>
+      </div>
+      <h1 className="font-display text-center text-3xl font-bold text-white">
+        {mode === 'login' ? 'Welcome back' : 'Create account'}
+      </h1>
+      <p className="mt-2 text-center text-sm text-stone-500">
+        Buy albums and manage your library — secure JWT session.
       </p>
 
-      <div className="grid gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
-        <div className="flex flex-wrap gap-2">
+      <div className="card-glass mt-10 w-full p-8">
+        <div className="grid grid-cols-2 gap-2 rounded-xl bg-black/40 p-1 ring-1 ring-white/10">
           <button
-            className={`rounded-lg border px-3 py-2 text-sm ${
+            type="button"
+            className={`rounded-lg py-2.5 text-sm font-semibold transition ${
               mode === 'login'
-                ? 'border-sky-400/40 bg-sky-400/15 hover:bg-sky-400/25'
-                : 'border-white/15 bg-white/10 hover:bg-white/15'
+                ? 'bg-white/10 text-white shadow'
+                : 'text-stone-500 hover:text-stone-300'
             }`}
             onClick={() => setMode('login')}
           >
-            Login
+            Sign in
           </button>
           <button
-            className={`rounded-lg border px-3 py-2 text-sm ${
+            type="button"
+            className={`rounded-lg py-2.5 text-sm font-semibold transition ${
               mode === 'register'
-                ? 'border-sky-400/40 bg-sky-400/15 hover:bg-sky-400/25'
-                : 'border-white/15 bg-white/10 hover:bg-white/15'
+                ? 'bg-white/10 text-white shadow'
+                : 'text-stone-500 hover:text-stone-300'
             }`}
             onClick={() => setMode('register')}
           >
@@ -57,39 +66,39 @@ export function LoginPage() {
           </button>
         </div>
 
-        <label className="grid gap-2">
-          <span className="text-sm text-slate-400">Email</span>
-          <input
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </label>
-        <label className="grid gap-2">
-          <span className="text-sm text-slate-400">Password</span>
-          <input
-            type="password"
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
+        <div className="mt-8 space-y-5">
+          <label className="block">
+            <span className="mb-2 block text-xs font-medium uppercase tracking-wider text-stone-500">Email</span>
+            <input className="input-field" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-xs font-medium uppercase tracking-wider text-stone-500">Password</span>
+            <input
+              type="password"
+              className="input-field"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            />
+          </label>
+        </div>
 
         {error ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">{error}</div>
+          <div className="mt-5 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-center text-sm text-red-100">
+            {error}
+          </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            className="rounded-lg border border-sky-400/40 bg-sky-400/15 px-3 py-2 text-sm hover:bg-sky-400/25 disabled:opacity-50"
-            disabled={busy}
-            onClick={submit}
-          >
-            {busy ? 'Working…' : mode === 'login' ? 'Login' : 'Create account'}
-          </button>
-        </div>
+        <button type="button" className="btn-primary mt-8 w-full" disabled={busy} onClick={submit}>
+          {busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
+        </button>
+
+        <p className="mt-8 text-center text-sm text-stone-500">
+          <Link className="text-fuchsia-400/90 hover:text-fuchsia-300" to="/">
+            ← Back to catalog
+          </Link>
+        </p>
       </div>
     </div>
   )
 }
-

@@ -4,6 +4,7 @@ import { apiFetch } from '../../api/client'
 import { useAuth } from '../../state/auth'
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
+import { AlbumArt } from '../../shared/ui/AlbumArt'
 
 type Artist = {
   id: number
@@ -53,90 +54,99 @@ export function AdminArtistsPage() {
 
   if (!user) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-        <div className="font-semibold text-white">Login required</div>
-        <div className="mt-1 text-sm text-slate-300">Admin routes require authentication.</div>
-        <div className="h-3" />
-        <Link className="rounded-lg border border-sky-400/40 bg-sky-400/15 px-3 py-2 text-sm hover:bg-sky-400/25" to="/login">
-          Login
+      <div className="card-glass max-w-lg p-8">
+        <h1 className="font-display text-xl font-bold text-white">Admin</h1>
+        <p className="mt-2 text-sm text-stone-400">Sign in as admin to manage artists.</p>
+        <Link className="btn-primary mt-6 inline-flex" to="/login">
+          Sign in
         </Link>
       </div>
     )
   }
   if (!user.is_admin) {
-    return <div className="rounded-xl border border-white/10 bg-white/5 p-4">Admin access required.</div>
+    return (
+      <div className="card-glass max-w-lg p-8 text-stone-300">
+        You don’t have admin access.
+      </div>
+    )
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold text-white">Admin · Artists</h1>
-      <p className="mb-4 text-slate-300">Create and delete artists (minimal UI).</p>
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Link className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm hover:bg-white/15" to="/admin/albums">
-          Manage albums
+    <div className="space-y-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-wider text-fuchsia-400/90">Admin</p>
+          <h1 className="font-display text-3xl font-bold text-white">Artists</h1>
+          <p className="mt-1 text-stone-400">Create and remove performers from the catalog.</p>
+        </div>
+        <Link className="btn-secondary shrink-0 self-start sm:self-auto" to="/admin/albums">
+          Manage albums →
         </Link>
-      </div>
+      </header>
 
-      <div className="mb-4 grid gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
-        <div className="font-semibold text-white">Create artist</div>
-        <div className="flex flex-wrap gap-2">
+      <section className="card-glass p-6">
+        <h2 className="font-semibold text-white">New artist</h2>
+        <div className="mt-4 flex flex-wrap gap-3">
           <input
-            className="min-w-[180px] flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
-            placeholder="Real name"
+            className="input-field max-w-xs flex-1 min-w-[160px]"
+            placeholder="Legal name"
             value={realName}
             onChange={(e) => setRealName(e.target.value)}
           />
           <input
-            className="min-w-[180px] flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
-            placeholder="Performing name"
+            className="input-field max-w-xs flex-1 min-w-[160px]"
+            placeholder="Stage name"
             value={performingName}
             onChange={(e) => setPerformingName(e.target.value)}
           />
           <input
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-400/40"
+            className="input-field w-auto min-w-[140px]"
             type="date"
             value={dob}
             onChange={(e) => setDob(e.target.value)}
           />
           <button
-            className="rounded-lg border border-sky-400/40 bg-sky-400/15 px-3 py-2 text-sm hover:bg-sky-400/25 disabled:opacity-50"
+            type="button"
+            className="btn-primary"
             disabled={!realName || !performingName || createM.isPending}
             onClick={() => createM.mutate()}
           >
-            Create
+            Add artist
           </button>
         </div>
-      </div>
+      </section>
 
       {artistsQ.isLoading ? (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">Loading…</div>
+        <div className="card-glass p-8 text-stone-500">Loading…</div>
       ) : null}
       {artistsQ.isError ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4">Failed to load.</div>
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-100">
+          Failed to load artists.
+        </div>
       ) : null}
 
       <div className="grid gap-3">
         {(artistsQ.data ?? []).map((a) => (
-          <div key={a.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div key={a.id} className="card-glass flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <AlbumArt albumName={a.performing_name} artistName={a.real_name} size="md" />
               <div>
                 <div className="font-semibold text-white">{a.performing_name}</div>
-                <div className="text-sm text-slate-300">
-                  {a.real_name} · {a.date_of_birth}
+                <div className="text-sm text-stone-500">
+                  {a.real_name} · born {a.date_of_birth}
                 </div>
               </div>
-              <button
-                className="rounded-lg border border-red-400/40 bg-red-400/15 px-3 py-2 text-sm hover:bg-red-400/25"
-                onClick={() => delM.mutate(a.id)}
-              >
-                Delete
-              </button>
             </div>
+            <button
+              type="button"
+              className="rounded-xl border border-red-400/35 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-100 transition hover:bg-red-500/20"
+              onClick={() => delM.mutate(a.id)}
+            >
+              Delete
+            </button>
           </div>
         ))}
       </div>
     </div>
   )
 }
-

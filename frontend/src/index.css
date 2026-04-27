@@ -3,5 +3,54 @@
 @layer base {
   :root {
     color-scheme: dark;
+    --mm-bg-0: #0c0a09;
+    --mm-bg-1: #1c1917;
+    --mm-accent: #a855f7;
+    --mm-accent2: #f43f5e;
+  }
+
+  html {
+    font-family: "DM Sans", system-ui, sans-serif;
+  }
+
+  body {
+    @apply min-h-dvh antialiased;
+    background-color: var(--mm-bg-0);
+    background-image:
+      radial-gradient(ellipse 120% 80% at 50% -30%, rgb(168 85 247 / 0.12), transparent 50%),
+      radial-gradient(ellipse 80% 50% at 100% 0%, rgb(244 63 94 / 0.08), transparent 45%),
+      radial-gradient(ellipse 60% 40% at 0% 100%, rgb(56 189 248 / 0.06), transparent 40%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    @apply bg-fuchsia-500/35 text-white;
   }
 }
+
+@layer utilities {
+  .font-display {
+    font-family: Syne, "DM Sans", system-ui, sans-serif;
+  }
+
+  .text-gradient {
+    @apply bg-linear-to-r from-fuchsia-400 via-rose-400 to-amber-300 bg-clip-text text-transparent;
+  }
+
+  .card-glass {
+    @apply rounded-2xl border border-white/[0.08] bg-stone-900/40 shadow-xl shadow-black/40 backdrop-blur-md;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl border border-fuchsia-400/35 bg-linear-to-br from-fuchsia-600/90 to-rose-600/80 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-fuchsia-950/50 transition hover:border-fuchsia-400/55 hover:from-fuchsia-500 hover:to-rose-500 hover:shadow-fuchsia-900/60 disabled:pointer-events-none disabled:opacity-45;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-stone-100 transition hover:bg-white/10 disabled:pointer-events-none disabled:opacity-45;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border border-white/12 bg-black/25 px-4 py-3 text-sm text-white shadow-inner shadow-black/20 placeholder:text-stone-500 focus:border-fuchsia-500/45 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/25;
+  }
+}
+

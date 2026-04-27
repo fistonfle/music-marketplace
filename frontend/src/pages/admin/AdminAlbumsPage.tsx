@@ -4,6 +4,8 @@ import { apiFetch } from '../../api/client'
 import { useAuth } from '../../state/auth'
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
+import { AlbumArt } from '../../shared/ui/AlbumArt'
+import { Stars } from '../../shared/ui/Stars'
 
 type Artist = {
   id: number
@@ -63,38 +65,45 @@ export function AdminAlbumsPage() {
     },
   })
 
+  const artistMap = new Map((artistsQ.data ?? []).map((a) => [a.id, a]))
+
   if (!user) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-        <div className="font-semibold text-white">Login required</div>
-        <div className="mt-1 text-sm text-slate-300">Admin routes require authentication.</div>
-        <div className="h-3" />
-        <Link className="rounded-lg border border-sky-400/40 bg-sky-400/15 px-3 py-2 text-sm hover:bg-sky-400/25" to="/login">
-          Login
+      <div className="card-glass max-w-lg p-8">
+        <h1 className="font-display text-xl font-bold text-white">Admin</h1>
+        <p className="mt-2 text-sm text-stone-400">Sign in as admin to manage albums.</p>
+        <Link className="btn-primary mt-6 inline-flex" to="/login">
+          Sign in
         </Link>
       </div>
     )
   }
   if (!user.is_admin) {
-    return <div className="rounded-xl border border-white/10 bg-white/5 p-4">Admin access required.</div>
+    return (
+      <div className="card-glass max-w-lg p-8 text-stone-300">
+        You don’t have admin access.
+      </div>
+    )
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold text-white">Admin · Albums</h1>
-      <p className="mb-4 text-slate-300">Create and delete albums (minimal UI).</p>
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Link className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm hover:bg-white/15" to="/admin/artists">
-          Manage artists
+    <div className="space-y-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-wider text-fuchsia-400/90">Admin</p>
+          <h1 className="font-display text-3xl font-bold text-white">Albums</h1>
+          <p className="mt-1 text-stone-400">Attach releases to artists and set pricing.</p>
+        </div>
+        <Link className="btn-secondary shrink-0 self-start sm:self-auto" to="/admin/artists">
+          ← Artists
         </Link>
-      </div>
+      </header>
 
-      <div className="mb-4 grid gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
-        <div className="font-semibold text-white">Create album</div>
-        <div className="flex flex-wrap gap-2">
+      <section className="card-glass p-6">
+        <h2 className="font-semibold text-white">New album</h2>
+        <div className="mt-4 flex flex-wrap gap-3">
           <select
-            className="min-w-[220px] rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-400/40"
+            className="input-field max-w-xs flex-1 min-w-[200px]"
             value={artistId}
             onChange={(e) =>
               setArtistId(e.target.value ? Number(e.target.value) : '')
@@ -108,55 +117,71 @@ export function AdminAlbumsPage() {
             ))}
           </select>
           <input
-            className="min-w-[180px] flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
-            placeholder="Album name"
+            className="input-field max-w-xs flex-1 min-w-[160px]"
+            placeholder="Album title"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <input
-            className="w-28 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-400/40"
-            placeholder="Price"
+            className="input-field w-28"
+            placeholder="9.99"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
           <button
-            className="rounded-lg border border-sky-400/40 bg-sky-400/15 px-3 py-2 text-sm hover:bg-sky-400/25 disabled:opacity-50"
+            type="button"
+            className="btn-primary"
             disabled={artistId === '' || !name || createM.isPending}
             onClick={() => createM.mutate()}
           >
-            Create
+            Add album
           </button>
         </div>
-      </div>
+      </section>
 
       {albumsQ.isLoading ? (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">Loading…</div>
+        <div className="card-glass p-8 text-stone-500">Loading…</div>
       ) : null}
       {albumsQ.isError ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4">Failed to load.</div>
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-100">
+          Failed to load albums.
+        </div>
       ) : null}
 
       <div className="grid gap-3">
-        {(albumsQ.data ?? []).map((a) => (
-          <div key={a.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className="font-semibold text-white">{a.name}</div>
-                <div className="text-sm text-slate-300">
-                  Artist #{a.artist_id} · ${a.price} · avg {a.rating_avg ? a.rating_avg.toFixed(1) : '—'} ({a.rating_count})
+        {(albumsQ.data ?? []).map((a) => {
+          const artist = artistMap.get(a.artist_id)
+          return (
+            <div key={a.id} className="card-glass flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-1 items-center gap-4">
+                <AlbumArt albumName={a.name} artistName={artist?.performing_name} size="md" />
+                <div className="min-w-0">
+                  <div className="truncate font-semibold text-white">{a.name}</div>
+                  <div className="truncate text-sm text-stone-500">{artist?.performing_name ?? `Artist #${a.artist_id}`}</div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-stone-500">
+                    <span className="rounded-lg bg-white/10 px-2 py-0.5 font-medium text-fuchsia-200">${a.price}</span>
+                    {a.rating_avg != null ? (
+                      <span className="flex items-center gap-2">
+                        <Stars value={a.rating_avg} />
+                        ({a.rating_count})
+                      </span>
+                    ) : (
+                      <span>no ratings</span>
+                    )}
+                  </div>
                 </div>
               </div>
               <button
-                className="rounded-lg border border-red-400/40 bg-red-400/15 px-3 py-2 text-sm hover:bg-red-400/25"
+                type="button"
+                className="rounded-xl border border-red-400/35 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-100 transition hover:bg-red-500/20"
                 onClick={() => delM.mutate(a.id)}
               >
                 Delete
               </button>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
 }
-
