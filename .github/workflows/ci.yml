@@ -30,6 +30,7 @@ jobs:
     env:
       DATABASE_URL: postgresql+psycopg://music:music@localhost:5432/music_marketplace_test
       JWT_SECRET: ci-secret-not-for-production
+      PYTHONPATH: ${{ github.workspace }}/backend
 
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +47,7 @@ jobs:
 
       - name: Run backend tests
         working-directory: backend
-        run: pytest -q
+        run: python -m pytest -q
 
   frontend:
     runs-on: ubuntu-latest

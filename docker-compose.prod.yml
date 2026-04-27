@@ -1,0 +1,45 @@
+services:
+  # Production compose: pull prebuilt images from GHCR.
+  # Use Caddy (already running on the VPS) to route traffic to these ports.
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-music}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-music}
+      POSTGRES_DB: ${POSTGRES_DB:-music_marketplace}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    image: ghcr.io/${GITHUB_OWNER:-fistonfle}/music-marketplace-backend:${IMAGE_TAG:-latest}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-music}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-music}
+      POSTGRES_DB: ${POSTGRES_DB:-music_marketplace}
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS:-900}
+      JWT_REFRESH_TTL_SECONDS: ${JWT_REFRESH_TTL_SECONDS:-1209600}
+    ports:
+      - "${BACKEND_PORT:-18000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/${GITHUB_OWNER:-fistonfle}/music-marketplace-frontend:${IMAGE_TAG:-latest}
+    ports:
+      - "${FRONTEND_PORT:-15173}:5173"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
+
