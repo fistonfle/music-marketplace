@@ -36,6 +36,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Compute frontend VITE_API_BASE_URL
+        id: frontend_api
+        shell: bash
+        env:
+          PROD_VITE_API_BASE_URL: ${{ secrets.PROD_VITE_API_BASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -n "${PROD_VITE_API_BASE_URL:-}" ]; then
+            echo "api_base=${PROD_VITE_API_BASE_URL}" >> "$GITHUB_OUTPUT"
+          else
+            echo "api_base=http://localhost:8000" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
@@ -54,7 +67,7 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           build-args: |
-            VITE_API_BASE_URL=${{ secrets.PROD_VITE_API_BASE_URL != '' && secrets.PROD_VITE_API_BASE_URL || 'http://localhost:8000' }}
+            VITE_API_BASE_URL=${{ steps.frontend_api.outputs.api_base }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER }}/music-marketplace-frontend:${{ steps.meta.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.OWNER }}/music-marketplace-frontend:latest
@@ -87,7 +100,12 @@ jobs:
           need SSH_KEY "${{ secrets.SSH_KEY }}"
           need APP_DIR "${{ secrets.APP_DIR }}"
           need GHCR_PULL_TOKEN "${GHCR_PULL_TOKEN}"
-          need PORT "${{ secrets.PORT }}"
+
+          PORT_VAL="${{ secrets.PORT }}"
+          if [ -z "${PORT_VAL}" ]; then
+            echo "Missing secret PORT — set it to your SSH port (usually 22)."
+            missing=1
+          fi
 
           if [ "${missing}" != "0" ]; then
             exit 1

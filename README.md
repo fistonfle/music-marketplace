@@ -10,17 +10,18 @@ Small hiring-exercise app: admins manage artists/albums; users browse, purchase,
 ## CI/CD (GitHub Actions → VPS)
 This repo includes:
 - `.github/workflows/ci.yml`: runs backend tests + frontend build on pushes/PRs to `main`
-- `.github/workflows/deploy.yml`: SSH deploy to a VPS on pushes to `main` (and manual runs)
+- `.github/workflows/deploy.yml`: **manual** SSH deploy (git pull + `docker compose` build) — use if you are *not* using GHCR images
 - `.github/workflows/build-and-deploy-ghcr.yml`: builds/pushes images to GHCR, then SSH deploys the VPS by pulling images
 
 ### GitHub Secrets (repository)
 Configure these in **GitHub → Settings → Secrets and variables → Actions**:
-- `VPS_HOST`: server hostname/IP
-- `VPS_USER`: SSH user
-- `VPS_SSH_KEY`: private key (PEM) with access to the server
-- `VPS_PORT`: SSH port (often `22`)
-- `VPS_APP_DIR`: absolute path to the deployed repo on the server (example: `/opt/music-marketplace`)
-- `PROD_VITE_API_BASE_URL`: public API base URL (used at frontend build time, e.g. `https://music-api.example.com`)
+- `HOST`: server hostname/IP
+- `USER`: SSH user
+- `SSH_KEY`: private key (PEM) with access to the server
+- `PORT`: SSH port (set to `22` if standard)
+- `APP_DIR`: absolute path to the deployed repo on the server (example: `/opt/music-marketplace`)
+- `PROD_VITE_API_BASE_URL` (optional): public API base URL used at **frontend image build** time (e.g. `https://music-api.sagambasystem.rw`). If omitted, the build falls back to `http://localhost:8000` (dev default).
+- `GHCR_PULL_TOKEN` (usually required): a GitHub **PAT** with `read:packages` used on the VPS to `docker pull` private GHCR images. (Alternative: make the GHCR package public, then you can remove the token + `docker login` step from the workflow.)
 
 ### VPS one-time setup (typical)
 On the server:
