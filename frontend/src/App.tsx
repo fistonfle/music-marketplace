@@ -17,7 +17,7 @@ function Logo() {
         </svg>
       </span>
       <span className="font-display text-lg font-bold tracking-tight text-white">
-        Aria <span className="text-stone-500">·</span> <span className="text-stone-300">Store</span>
+        EZ <span className="text-stone-500">·</span> <span className="text-stone-300">Store</span>
       </span>
     </Link>
   )
@@ -82,12 +82,12 @@ function Footer() {
     <footer className="mt-auto border-t border-white/[0.06] bg-black/20 py-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
-          <div className="font-display text-sm font-semibold text-stone-300">Aria Store</div>
+          <div className="font-display text-sm font-semibold text-stone-300">EZ Store</div>
           <p className="mt-1 max-w-md text-sm text-stone-500">
             Browse artists, buy albums once, rate what you own — a compact marketplace demo.
           </p>
         </div>
-        <p className="text-xs text-stone-600">© {new Date().getFullYear()} Music Marketplace</p>
+        <p className="text-xs text-stone-600">© {new Date().getFullYear()} EZ Store</p>
       </div>
     </footer>
   )
