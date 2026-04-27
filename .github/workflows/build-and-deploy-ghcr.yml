@@ -54,7 +54,7 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           build-args: |
-            VITE_API_BASE_URL=${{ secrets.PROD_VITE_API_BASE_URL }}
+            VITE_API_BASE_URL=${{ secrets.PROD_VITE_API_BASE_URL != '' && secrets.PROD_VITE_API_BASE_URL || 'http://localhost:8000' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER }}/music-marketplace-frontend:${{ steps.meta.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.OWNER }}/music-marketplace-frontend:latest
@@ -63,19 +63,50 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
+    env:
+      GHCR_USERNAME: ${{ github.repository_owner }}
+      GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
     steps:
+      - name: Validate deploy secrets (fail fast)
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+
+          need() {
+            local name="$1"
+            local val="$2"
+            if [ -z "${val}" ]; then
+              echo "Missing secret: ${name}"
+              missing=1
+            fi
+          }
+
+          need HOST "${{ secrets.HOST }}"
+          need USER "${{ secrets.USER }}"
+          need SSH_KEY "${{ secrets.SSH_KEY }}"
+          need APP_DIR "${{ secrets.APP_DIR }}"
+          need GHCR_PULL_TOKEN "${GHCR_PULL_TOKEN}"
+          need PORT "${{ secrets.PORT }}"
+
+          if [ "${missing}" != "0" ]; then
+            exit 1
+          fi
+
       - name: Deploy via SSH (pull images + compose up)
         uses: appleboy/ssh-action@v1.2.5
         with:
-          host: ${{ secrets.VPS_HOST }}
-          port: ${{ secrets.VPS_PORT }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.HOST }}
+          port: ${{ secrets.PORT }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
           command_timeout: 20m
-          script_stop: true
+          envs: GHCR_USERNAME,GHCR_PULL_TOKEN
           script: |
             set -euo pipefail
-            cd "${{ secrets.VPS_APP_DIR }}"
+
+            APP_DIR="${{ secrets.APP_DIR }}"
+            cd "${APP_DIR}"
 
             # Optional server-side env file (recommended)
             if [ -f ./.env.production ]; then
@@ -86,6 +117,9 @@ jobs:
 
             export IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
             export GITHUB_OWNER="${{ github.repository_owner }}"
+
+            # Authenticate Docker on the VPS to pull private GHCR packages.
+            echo "${GHCR_PULL_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
 
             docker compose -p musicmarketplace -f docker-compose.prod.yml pull
             docker compose -p musicmarketplace -f docker-compose.prod.yml up -d
