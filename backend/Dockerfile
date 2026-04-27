@@ -8,6 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
+# Alembic runs at startup (see app.main); these live next to app/ in the repo.
+COPY alembic.ini /app/alembic.ini
+COPY alembic /app/alembic
+
 COPY app /app/app
 
 EXPOSE 8000
