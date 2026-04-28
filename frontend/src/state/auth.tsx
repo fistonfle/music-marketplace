@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState } from 'react'
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { apiFetch, type TokenPair } from '../api/client'
 
 type AuthUser = { id: number; email: string; is_admin: boolean }
@@ -37,12 +37,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadTokenPair(),
   )
   const [user, setUser] = useState<AuthUser | null>(null)
+  const [rehydrating, setRehydrating] = useState(true)
 
   async function fetchMe(access: string) {
     // Keeps UI role-aware (admin vs regular user).
     const me = await apiFetch<AuthUser>('/auth/me', { token: access })
     setUser(me)
   }
+
+  // Rehydrate session on refresh: we persist tokens, but user state is memory-only.
+  useEffect(() => {
+    let cancelled = false
+
+    async function run() {
+      if (!tokenPair) {
+        if (!cancelled) setRehydrating(false)
+        return
+      }
+      try {
+        await fetchMe(tokenPair.access_token)
+      } catch {
+        // Access token might be expired; attempt a single refresh using the refresh token.
+        try {
+          const next = await apiFetch<TokenPair>('/auth/refresh', {
+            method: 'POST',
+            body: JSON.stringify({ refresh_token: tokenPair.refresh_token }),
+          })
+          if (cancelled) return
+          setTokenPair(next)
+          saveTokenPair(next)
+          await fetchMe(next.access_token)
+        } catch {
+          // Refresh failed (revoked/expired). Clear local session.
+          if (cancelled) return
+          setUser(null)
+          setTokenPair(null)
+          saveTokenPair(null)
+        }
+      } finally {
+        if (!cancelled) setRehydrating(false)
+      }
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function login(email: string, password: string) {
     // Backend uses OAuth2 password flow for login, so we submit as form-encoded.
@@ -78,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [tokenPair, user],
   )
 
+  if (rehydrating) return <>{children}</>
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>
 }
 

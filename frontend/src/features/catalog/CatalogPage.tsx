@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiFetch } from '../../api/client'
+import { ApiError, apiFetch } from '../../api/client'
 import { useAuth } from '../../state/auth'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AlbumArt } from '../../shared/ui/AlbumArt'
@@ -22,6 +22,10 @@ type Album = {
   rating_count: number
 }
 
+type LibraryItem = {
+  album: { id: number }
+}
+
 export function CatalogPage() {
   const qc = useQueryClient()
   const { tokenPair, user } = useAuth()
@@ -38,6 +42,13 @@ export function CatalogPage() {
     queryFn: () => apiFetch<Album[]>(`/albums${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   })
 
+  // Used to disable "Buy" for albums already purchased.
+  const libraryQ = useQuery({
+    queryKey: ['library'],
+    enabled: !!tokenPair,
+    queryFn: () => apiFetch<LibraryItem[]>('/library', { token: tokenPair!.access_token }),
+  })
+
   const purchaseM = useMutation({
     mutationFn: (albumId: number) => {
       if (!tokenPair) throw new Error('Not authenticated')
@@ -46,6 +57,12 @@ export function CatalogPage() {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['library'] })
     },
+    onError: async (err) => {
+      // If we tried to buy something already owned, refresh the library so the UI flips to "Owned".
+      if (err instanceof ApiError && err.status === 400) {
+        await qc.invalidateQueries({ queryKey: ['library'] })
+      }
+    },
   })
 
   const artistMap = useMemo(() => {
@@ -53,6 +70,12 @@ export function CatalogPage() {
     for (const a of artistsQ.data ?? []) m.set(a.id, a)
     return m
   }, [artistsQ.data])
+
+  const ownedAlbumIds = useMemo(() => {
+    const s = new Set<number>()
+    for (const it of libraryQ.data ?? []) s.add(it.album.id)
+    return s
+  }, [libraryQ.data])
 
   return (
     <div className="space-y-6">
@@ -84,6 +107,7 @@ export function CatalogPage() {
       <div className="grid gap-3 sm:grid-cols-2">
         {(albumsQ.data ?? []).map((al) => {
           const artistName = artistMap.get(al.artist_id)?.performing_name ?? '—'
+          const owned = ownedAlbumIds.has(al.id)
           return (
             <div key={al.id} className="flex gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
               <AlbumArt albumName={al.name} artistName={artistName} size="sm" />
@@ -110,7 +134,7 @@ export function CatalogPage() {
                   )}
                   <button
                     className="rounded-md bg-fuchsia-600 px-3 py-2 text-xs font-medium text-white hover:bg-fuchsia-500 disabled:opacity-50"
-                    disabled={purchaseM.isPending}
+                    disabled={purchaseM.isPending || owned}
                     onClick={() => {
                       if (!tokenPair) {
                         nav('/login', { state: { from: loc.pathname + loc.search } })
@@ -119,7 +143,7 @@ export function CatalogPage() {
                       purchaseM.mutate(al.id)
                     }}
                   >
-                    {tokenPair ? 'Buy' : 'Sign in'}
+                    {owned ? 'Owned' : tokenPair ? 'Buy' : 'Sign in'}
                   </button>
                 </div>
               </div>
