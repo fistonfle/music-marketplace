@@ -6,6 +6,7 @@ type AuthUser = { id: number; email: string; is_admin: boolean }
 type AuthState = {
   tokenPair: TokenPair | null
   user: AuthUser | null
+  rehydrating: boolean
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string) => Promise<void>
   logout: () => void
@@ -115,11 +116,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = useMemo<AuthState>(
-    () => ({ tokenPair, user, login, register, logout }),
-    [tokenPair, user],
+    () => ({ tokenPair, user, rehydrating, login, register, logout }),
+    [tokenPair, user, rehydrating],
   )
 
-  if (rehydrating) return <>{children}</>
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>
 }
 
