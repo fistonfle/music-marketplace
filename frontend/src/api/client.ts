@@ -1,4 +1,9 @@
-// Minimal fetch wrapper: base URL, auth header, and structured errors.
+/**
+ * Minimal fetch wrapper for this exercise.
+ *
+ * Why not axios? Keeping dependencies small helps reviewers focus on data-flow
+ * and business rules rather than boilerplate.
+ */
 export type TokenPair = {
   access_token: string
   refresh_token: string
@@ -7,6 +12,8 @@ export type TokenPair = {
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+// NOTE: `VITE_API_BASE_URL` is baked into the frontend at build time (Vite env).
+// In production we set it via the GH workflow build-args / env.
 
 export class ApiError extends Error {
   status: number

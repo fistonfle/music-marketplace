@@ -11,6 +11,8 @@ type AuthState = {
   logout: () => void
 }
 
+// Persist tokens so refresh survives reloads. (This is a small demo app; for a
+// production app you’d typically prefer httpOnly cookies or a hardened storage strategy.)
 const LS_KEY = 'mm_token_pair'
 
 function loadTokenPair(): TokenPair | null {
@@ -43,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function login(email: string, password: string) {
+    // Backend uses OAuth2 password flow for login, so we submit as form-encoded.
     const form = new URLSearchParams()
     form.set('username', email)
     form.set('password', password)

@@ -55,6 +55,8 @@ docker compose up --build
 ## Seeded credentials
 - Admin: `admin@example.com` / `admin123`
 - User: `user@example.com` / `user123`
+  
+These are seeded on first startup for demo/review, and are **not shown in the UI**.
 
 ## Local dev (without Docker)
 ### Backend
