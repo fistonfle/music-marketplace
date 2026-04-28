@@ -143,7 +143,7 @@ export function CatalogPage() {
                       purchaseM.mutate(al.id)
                     }}
                   >
-                    {owned ? 'Owned' : tokenPair ? 'Buy' : 'Sign in'}
+                    {owned ? 'Owned' : 'Buy'}
                   </button>
                 </div>
               </div>
